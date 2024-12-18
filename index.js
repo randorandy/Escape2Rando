@@ -29,9 +29,15 @@ function read_input_rom(file) {
             // binary data
             console.log(e.target.result.length);
             console.log(e.target.result.substring(0, 64));
-            const expected_begin = "data:application/octet-stream;base64,";
+            const expected_begin = "data:application/"; //const expected_begin = "data:application/octet-stream;base64,";
             if (e.target.result.substring(0, expected_begin.length) === expected_begin) {
-                rom_data = e.target.result.substring(expected_begin.length);
+                const start_index = e.target.result.indexOf(";base64,") + 8;
+                if (start_index >= expected_begin.length && start_index < 150) {
+                    rom_data = e.target.result.substring(start_index);
+                }
+                else {
+                    console.error(`unexpected file encoding: ${e.target.result.substring(0, 160)}`);
+                }
             }
             else {
                 console.error(`unexpected file encoding: ${e.target.result.substring(0, 64)}`);
@@ -79,19 +85,16 @@ const b64toBlob = (b64Data, contentType='', sliceSize=512) => {
 }
 
 function setup_roll_button() {
-    console.log("   -------  setup_roll_button");
     const roll_button = document.getElementById("roll-button");
     roll_button.addEventListener("click", async () => {
-        const activated_trick_names = [];
-
+        const visibility_box = document.getElementById("visibility");
+        const params = {
+            "visibility": visibility_box.checked,
+        }
         roll_button.disabled = true;
         const status_div = document.getElementById("status");
         status_div.innerText = "rolling...";
         await sleep(0.01);
-        const python_roll1_function = pyscript.interpreter.globals.get('roll1');
-        //const python_roll2_function = pyscript.interpreter.globals.get('roll2');
-        const python_roll3_function = pyscript.interpreter.globals.get('roll3');
-        const python_roll4_function = pyscript.interpreter.globals.get('roll4');
         const roll1_success = python_roll1_function();
         if (! roll1_success) {
             console.log("roll1 failed");
@@ -99,8 +102,8 @@ function setup_roll_button() {
             roll_button.disabled = false;
             return;
         }
-        // await sleep(0.01)
-        // python_roll2_function(JSON.stringify(params));
+        await sleep(0.01)
+        python_roll2_function(JSON.stringify(params));
         await sleep(0.01)
         const roll3_success = python_roll3_function();
         if (! roll3_success) {
@@ -162,4 +165,6 @@ window.addEventListener("load", (event) => {
     // populate_presets(trick_promise);
     setup_roll_button();
     setup_file_loader();
+    // setup_logic_string();
+    // setup_objective_rando();
 });
